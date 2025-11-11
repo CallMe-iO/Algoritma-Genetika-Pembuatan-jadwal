@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sistem Penjadwalan Kuliah - Algoritma Genetika</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .input-field {
+        width: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        transition: box-shadow 0.2s ease;
+      }
+      .input-field:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+        border-color: #6366f1;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+      }
+      .tab-btn.active {
+        border-color: #4f46e5;
+        color: #4f46e5;
+        font-weight: 600;
+      }
+      .download-btn {
+        font-size: 0.75rem;
+        background: #f1f5f9;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+      }
+      .download-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-100 min-h-screen">
+    <header class="bg-white shadow">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-1">
+        <h1 class="text-2xl font-semibold text-slate-800">
+          Sistem Penjadwalan Kuliah Berbasis Algoritma Genetika
+        </h1>
+        <p class="text-sm text-slate-500">Unggah data, atur parameter, dan buat jadwal tanpa bentrok.</p>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section class="space-y-6">
+          <div class="bg-white rounded-xl shadow p-6 space-y-4">
+            <header class="flex items-center justify-between">
+              <div>
+                <h2 class="text-lg font-semibold text-slate-800">Data Mata Kuliah</h2>
+                <p class="text-sm text-slate-500">Unggah CSV/XLSX sesuai template.</p>
+              </div>
+              <button
+                id="demoBtn"
+                class="text-sm text-indigo-600 hover:underline"
+                title="Muat contoh data demo cepat"
+              >
+                Gunakan Data Demo
+              </button>
+            </header>
+            <form id="uploadForm" class="space-y-4" enctype="multipart/form-data">
+              <label class="block">
+                <span class="text-sm font-medium text-slate-600">Unggah Data</span>
+                <input
+                  type="file"
+                  name="file"
+                  accept=".csv,.xlsx"
+                  class="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+                  required
+                />
+              </label>
+              <div class="flex items-center justify-between text-sm">
+                <a
+                  href="/template"
+                  class="text-indigo-600 hover:underline"
+                  title="Unduh template_penjadwalan.xlsx"
+                  >Unduh Template</a
+                >
+                <button
+                  type="submit"
+                  class="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800"
+                >
+                  Unggah Data
+                </button>
+              </div>
+            </form>
+            <div id="datasetSummary" class="text-sm text-slate-500">
+              Belum ada data yang diunggah.
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-6 space-y-4">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-800">Pengaturan Algoritma</h2>
+              <p class="text-sm text-slate-500">Sesuaikan parameter AG sebelum membuat jadwal.</p>
+            </div>
+            <form id="paramForm" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <label class="flex flex-col gap-1">
+                <span>Ukuran Populasi</span>
+                <input type="number" id="ukuran_populasi" class="input-field" min="10" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span>Jumlah Generasi</span>
+                <input type="number" id="jumlah_generasi" class="input-field" min="50" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span>Laju Crossover</span>
+                <input type="number" step="0.01" id="laju_crossover" class="input-field" min="0" max="1" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span>Laju Mutasi</span>
+                <input type="number" step="0.01" id="laju_mutasi" class="input-field" min="0" max="1" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span>Elitisme</span>
+                <input type="number" id="elitisme" class="input-field" min="1" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span>Ukuran Turnamen</span>
+                <input type="number" id="ukuran_turnamen" class="input-field" min="2" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span>Batas Waktu (detik)</span>
+                <input type="number" id="batas_waktu" class="input-field" min="5" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span>Seed (opsional)</span>
+                <input type="number" id="seed" class="input-field" placeholder="kosongkan untuk acak" />
+              </label>
+            </form>
+            <div class="flex flex-col gap-2 text-sm">
+              <label class="inline-flex items-center gap-2">
+                <input type="checkbox" id="perbaikan" class="rounded" />
+                <span>Percepat dengan perbaikan lokal</span>
+              </label>
+              <label class="inline-flex items-center gap-2">
+                <input type="checkbox" id="preferensi" class="rounded" />
+                <span>Utamakan preferensi</span>
+              </label>
+            </div>
+            <button
+              id="optimizeBtn"
+              class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled
+            >
+              Buat Jadwal
+            </button>
+            <div id="progressInfo" class="text-sm text-slate-500"></div>
+          </div>
+        </section>
+
+        <section class="bg-white rounded-xl shadow p-6 space-y-4">
+          <header class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-slate-800">Pratinjau Jadwal</h2>
+              <div class="flex gap-2">
+                <button class="download-btn" data-format="csv">Unduh CSV</button>
+                <button class="download-btn" data-format="xlsx">Unduh XLSX</button>
+                <button class="download-btn" data-format="pdf">Unduh PDF</button>
+              </div>
+            </div>
+            <div id="statusBadges" class="flex flex-wrap gap-2 text-xs"></div>
+          </header>
+          <div class="border rounded-lg">
+            <div class="flex border-b">
+              <button class="tab-btn active" data-view="kelas">Per Kelas</button>
+              <button class="tab-btn" data-view="ruang">Per Ruang</button>
+              <button class="tab-btn" data-view="dosen">Per Dosen</button>
+            </div>
+            <div class="p-4 space-y-3">
+              <div class="flex flex-wrap gap-2 text-sm">
+                <input
+                  type="text"
+                  id="searchInput"
+                  class="flex-1 input-field"
+                  placeholder="Cari matkul, dosen, ruang..."
+                />
+                <select id="dayFilter" class="input-field">
+                  <option value="">Semua Hari</option>
+                </select>
+              </div>
+              <div class="overflow-x-auto text-sm">
+                <table class="min-w-full text-left" id="scheduleTable">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-600">
+                      <th class="px-3 py-2">Kelompok</th>
+                      <th class="px-3 py-2">Hari</th>
+                      <th class="px-3 py-2">Jam</th>
+                      <th class="px-3 py-2">Kode</th>
+                      <th class="px-3 py-2">Mata Kuliah</th>
+                      <th class="px-3 py-2">Ruang</th>
+                      <th class="px-3 py-2">Dosen</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scheduleBody">
+                    <tr>
+                      <td colspan="7" class="text-center py-6 text-slate-400">
+                        Jadwal akan tampil setelah optimisasi.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="warningBox" class="text-xs text-amber-600"></div>
+              <div>
+                <p class="text-xs font-semibold text-slate-500 mb-1">Pemakaian Ruang (%)</p>
+                <div id="roomStats" class="grid grid-cols-2 gap-2 text-xs text-slate-600"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const defaultParams = {{ default_params | tojson | safe }};
+      const DAYS = ["Semua Hari", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      let activeView = "kelas";
+      let viewsData = { per_kelas: [], per_ruang: [], per_dosen: [] };
+      let ringkasan = null;
+
+      const summaryBox = document.getElementById("datasetSummary");
+      const progressInfo = document.getElementById("progressInfo");
+      const statusBadges = document.getElementById("statusBadges");
+      const warningBox = document.getElementById("warningBox");
+      const roomStatsBox = document.getElementById("roomStats");
+      const downloadButtons = document.querySelectorAll(".download-btn");
+      const optimizeBtn = document.getElementById("optimizeBtn");
+      const dayFilter = document.getElementById("dayFilter");
+
+      document.addEventListener("DOMContentLoaded", () => {
+        Object.entries(defaultParams).forEach(([key, value]) => {
+          const el = document.getElementById(key);
+          if (el) el.value = value ?? "";
+        });
+        dayFilter.innerHTML = DAYS.map(
+          (day) => `<option value="${day === "Semua Hari" ? "" : day}">${day}</option>`
+        ).join("");
+      });
+
+      document.getElementById("uploadForm").addEventListener("submit", async (evt) => {
+        evt.preventDefault();
+        const formData = new FormData(evt.target);
+        progressInfo.textContent = "Mengunggah dan memvalidasi data...";
+        try {
+          const res = await fetch("/upload", { method: "POST", body: formData });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Gagal mengunggah data");
+          renderSummary(data.summary);
+          optimizeBtn.disabled = false;
+          progressInfo.textContent = "Data siap diproses.";
+        } catch (err) {
+          progressInfo.textContent = err.message;
+        }
+      });
+
+      document.getElementById("demoBtn").addEventListener("click", async () => {
+        progressInfo.textContent = "Memuat data demo...";
+        try {
+          const res = await fetch("/demo", { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Gagal memuat demo");
+          renderSummary(data.summary);
+          optimizeBtn.disabled = false;
+          progressInfo.textContent = data.pesan;
+        } catch (err) {
+          progressInfo.textContent = err.message;
+        }
+      });
+
+      optimizeBtn.addEventListener("click", async () => {
+        const params = collectParams();
+        progressInfo.textContent = "Menjalankan algoritma genetika...";
+        optimizeBtn.disabled = true;
+        try {
+          const res = await fetch("/optimize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(params),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Optimisasi gagal");
+          ringkasan = data.ringkasan;
+          viewsData = data.jadwal;
+          progressInfo.textContent = `Fitness terbaik ${data.fitness_best.toFixed(
+            2
+          )} pada generasi ${data.generasi_tercapai}.`;
+          renderBadges(ringkasan);
+          renderWarnings(ringkasan);
+          renderRoomStats(ringkasan);
+          renderTable();
+          downloadButtons.forEach((btn) => (btn.disabled = false));
+        } catch (err) {
+          progressInfo.textContent = err.message;
+        } finally {
+          optimizeBtn.disabled = false;
+        }
+      });
+
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tab-btn").forEach((tab) => tab.classList.remove("active"));
+          btn.classList.add("active");
+          activeView = btn.dataset.view;
+          renderTable();
+        });
+      });
+
+      document.getElementById("searchInput").addEventListener("input", renderTable);
+      dayFilter.addEventListener("change", renderTable);
+
+      downloadButtons.forEach((btn) => {
+        btn.disabled = true;
+        btn.addEventListener("click", () => {
+          if (!viewsData.per_kelas.length) return;
+          const fmt = btn.dataset.format;
+          window.open(`/download?format=${fmt}&view=${activeView}`, "_blank");
+        });
+      });
+
+      function collectParams() {
+        const seedField = document.getElementById("seed").value;
+        return {
+          ukuran_populasi: Number(document.getElementById("ukuran_populasi").value),
+          jumlah_generasi: Number(document.getElementById("jumlah_generasi").value),
+          laju_crossover: Number(document.getElementById("laju_crossover").value),
+          laju_mutasi: Number(document.getElementById("laju_mutasi").value),
+          elitisme: Number(document.getElementById("elitisme").value),
+          ukuran_turnamen: Number(document.getElementById("ukuran_turnamen").value),
+          batas_waktu: Number(document.getElementById("batas_waktu").value),
+          seed: seedField === "" ? null : Number(seedField),
+          percepat_perbaikan: document.getElementById("perbaikan").checked,
+          utamakan_preferensi: document.getElementById("preferensi").checked,
+        };
+      }
+
+      function renderSummary(summary) {
+        summaryBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <p class="text-xs text-slate-500">Total Mata Kuliah</p>
+              <p class="text-lg font-semibold">${summary.total_matkul}</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500">Total SKS</p>
+              <p class="text-lg font-semibold">${summary.total_sks}</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500">Total Dosen</p>
+              <p class="text-lg font-semibold">${summary.total_dosen}</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500">Semester</p>
+              <p class="text-lg font-semibold">${summary.semesters.join(", ")}</p>
+            </div>
+          </div>`;
+        viewsData = { per_kelas: [], per_ruang: [], per_dosen: [] };
+        document.getElementById("scheduleBody").innerHTML =
+          '<tr><td colspan="7" class="text-center py-6 text-slate-400">Jadwal akan tampil setelah optimisasi.</td></tr>';
+        statusBadges.innerHTML = "";
+        warningBox.textContent = "";
+        roomStatsBox.innerHTML = "";
+        downloadButtons.forEach((btn) => (btn.disabled = true));
+      }
+
+      function renderBadges(summary) {
+        const badges = [
+          { label: "Tidak ada bentrok ruang", ok: summary.tanpa_bentrok_ruang },
+          { label: "Tidak ada bentrok dosen", ok: summary.tanpa_bentrok_dosen },
+          { label: "Tidak ada bentrok kelas", ok: summary.tanpa_bentrok_kelas },
+          { label: "Patuh DLB", ok: summary.patuh_dlb },
+        ];
+        statusBadges.innerHTML = badges
+          .map(
+            (badge) => `<span class="px-2 py-1 rounded-full ${
+              badge.ok ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+            }">${badge.label}</span>`
+          )
+          .join("");
+      }
+
+      function renderWarnings(summary) {
+        if (!summary || !summary.peringatan || !summary.peringatan.length) {
+          warningBox.textContent = "";
+          return;
+        }
+        warningBox.innerHTML = `<p class="font-semibold mb-1">Peringatan:</p><ul class="list-disc pl-5">${
+          summary.peringatan.map((item) => `<li>${item}</li>`).join("") || ""
+        }</ul>`;
+      }
+
+      function renderRoomStats(summary) {
+        if (!summary || !summary.stat_pemakaian_ruang) {
+          roomStatsBox.innerHTML = "";
+          return;
+        }
+        if (!summary.stat_pemakaian_ruang.length) {
+          roomStatsBox.innerHTML = "<p>Belum tersedia.</p>";
+          return;
+        }
+        roomStatsBox.innerHTML = summary.stat_pemakaian_ruang
+          .map(
+            (stat) => `<div class="flex items-center justify-between bg-slate-50 px-2 py-1 rounded">
+              <span>${stat.ruang}</span>
+              <span class="font-semibold">${stat.persentase}%</span>
+            </div>`
+          )
+          .join("");
+      }
+
+      function renderTable() {
+        const rows = viewsData[`per_${activeView}`] || [];
+        const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+        const dayValue = dayFilter.value;
+        const body = document.getElementById("scheduleBody");
+        if (!rows.length) {
+          body.innerHTML =
+            '<tr><td colspan="7" class="text-center py-6 text-slate-400">Belum ada jadwal.</td></tr>';
+          return;
+        }
+        const filtered = rows.filter((row) => {
+          const matchesDay = dayValue ? row.hari === dayValue : true;
+          const blob = `${row.grup} ${row.hari} ${row.kode_mk} ${row.nama_mk} ${row.ruang} ${row.dosen}`.toLowerCase();
+          const matchesSearch = blob.includes(searchTerm);
+          return matchesDay && matchesSearch;
+        });
+        body.innerHTML = filtered
+          .map(
+            (row) => `<tr class="border-b last:border-b-0">
+              <td class="px-3 py-2 font-semibold text-slate-700">${row.grup}</td>
+              <td class="px-3 py-2">${row.hari}</td>
+              <td class="px-3 py-2">${row.jam_mulai} - ${row.jam_selesai}</td>
+              <td class="px-3 py-2">${row.kode_mk}</td>
+              <td class="px-3 py-2">${row.nama_mk}</td>
+              <td class="px-3 py-2">${row.ruang}</td>
+              <td class="px-3 py-2">${row.dosen}</td>
+            </tr>`
+          )
+          .join("");
+      }
+    </script>
+
+  </body>
+</html>
